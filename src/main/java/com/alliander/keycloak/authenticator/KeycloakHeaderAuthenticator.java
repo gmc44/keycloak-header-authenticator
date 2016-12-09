@@ -31,46 +31,44 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
             Response challenge =  context.form()
                     .setError("HTTP Header validator is not configured")
                     .createForm("hdr-validation.ftl");
+            logger.info("Calling context.failureChallenge( ... )");
+
             context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
             return;
         }
 
         String headerValue = null;
+
         try {
             headerValue = context.getHttpRequest().getHttpHeaders().getHeaderString(headerName);
         } catch (NullPointerException npe) {
             // ignore
         }
 
-        if(headerValue == null || ! headerValue.equals(requiredValue)) {
-            Response challenge =  context.form()
-                    .setError("Missing required HTTP HEADER")
-                    .createForm("hdr-validation.ftl");
-            context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
-            return;
-        } else {
+        logger.info("Header " + headerName + " has value " + headerValue + " ( expected " +  requiredValue + ")");
+
+        if(headerValue != null && headerValue.equals(requiredValue)) {
+            // Ok, let the user in
+            logger.info("Calling context.success()");
             context.success();
+        } else {
+            logger.info("Calling context.attempted()");
+            context.attempted();
         }
     }
 
-
     public void action(AuthenticationFlowContext context) {
-        logger.info("action called ... context = " + context);
-
+        // Nothing here
     }
 
-
-
     public boolean requiresUser() {
-        logger.info("requiresUser called ... returning false");
+        // We don't need a User to check if an HTTP header is passed or not
         return false;
     }
 
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
-        logger.info("configuredFor called ... session=" + session + ", realm=" + realm + ", user=" + user);
-        boolean result = true;
-        logger.info("... returning "  +result);
-        return result;
+        // This method should not be called (because requiresUser returns false).
+        return false;
     }
 
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {

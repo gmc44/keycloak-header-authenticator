@@ -26,6 +26,7 @@ public class KeycloakHeaderAuthenticatorFactory implements AuthenticatorFactory,
 
     public static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED,
+            AuthenticationExecutionModel.Requirement.ALTERNATIVE,
             AuthenticationExecutionModel.Requirement.DISABLED};
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
@@ -57,7 +58,6 @@ public class KeycloakHeaderAuthenticatorFactory implements AuthenticatorFactory,
         return SINGLETON;
     }
 
-
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
         logger.info("getRequirementChoices called ... returning " + REQUIREMENT_CHOICES);
         return REQUIREMENT_CHOICES;
@@ -80,7 +80,7 @@ public class KeycloakHeaderAuthenticatorFactory implements AuthenticatorFactory,
     }
 
     public String getDisplayType() {
-        String result = "HTTP Header validating Authentication";
+        String result = "HTTP Header Authentication";
         logger.info("getDisplayType called ... returning " + result);
         return result;
     }
