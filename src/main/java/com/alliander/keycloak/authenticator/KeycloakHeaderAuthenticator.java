@@ -4,6 +4,7 @@ import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
+import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -52,8 +53,16 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
             logger.info("Calling context.success()");
             context.success();
         } else {
-            logger.info("Calling context.attempted()");
-            context.attempted();
+            if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.OPTIONAL ||
+                    context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.ALTERNATIVE) {
+                logger.info("Calling context.attempted()");
+                context.attempted();
+            } else if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.REQUIRED) {
+                logger.info("Calling context.failure()");
+                context.failure(AuthenticationFlowError.INVALID_CREDENTIALS);
+            } else {
+                // Something strange happened
+            }
         }
     }
 
