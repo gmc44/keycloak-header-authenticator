@@ -22,7 +22,7 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
     public static final String CREDENTIAL_TYPE = "http-header_validation";
 
     public void authenticate(AuthenticationFlowContext context) {
-        logger.info("authenticate called ... context = " + context);
+        logger.debug("authenticate called ... context = " + context);
 
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
         String headerName = config.getConfig().get(HDRAuthenticatorContstants.CONF_PRP_HEADER_NAME);
@@ -32,7 +32,7 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
             Response challenge =  context.form()
                     .setError("HTTP Header validator is not configured")
                     .createForm("hdr-validation.ftl");
-            logger.info("Calling context.failureChallenge( ... )");
+            logger.debug("Calling context.failureChallenge( ... )");
 
             context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
             return;
@@ -46,19 +46,19 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
             // ignore
         }
 
-        logger.info("Header " + headerName + " has value " + headerValue + " ( expected " +  requiredValue + ")");
+        logger.debug("Header " + headerName + " has value " + headerValue + " ( expected " +  requiredValue + ")");
 
         if(headerValue != null && headerValue.equals(requiredValue)) {
             // Ok, let the user in
-            logger.info("Calling context.success()");
+            logger.debug("Calling context.success()");
             context.success();
         } else {
             if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.OPTIONAL ||
                     context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.ALTERNATIVE) {
-                logger.info("Calling context.attempted()");
+                logger.debug("Calling context.attempted()");
                 context.attempted();
             } else if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.REQUIRED) {
-                logger.info("Calling context.failure()");
+                logger.debug("Calling context.failure()");
                 context.failure(AuthenticationFlowError.INVALID_CREDENTIALS);
             } else {
                 // Something strange happened
@@ -81,11 +81,11 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
     }
 
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
-        logger.info("setRequiredActions called ... session=" + session + ", realm=" + realm + ", user=" + user);
+        logger.debug("setRequiredActions called ... session=" + session + ", realm=" + realm + ", user=" + user);
     }
 
     public void close() {
-        logger.info("close called ...");
+        logger.debug("close called ...");
     }
 
 

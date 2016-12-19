@@ -49,61 +49,61 @@ public class KeycloakHeaderAuthenticatorFactory implements AuthenticatorFactory,
     }
 
     public String getId() {
-        logger.info("getId called ... returning " + PROVIDER_ID);
+        logger.debug("getId called ... returning " + PROVIDER_ID);
         return PROVIDER_ID;
     }
 
     public Authenticator create(KeycloakSession session) {
-        logger.info("create called ... returning " + SINGLETON);
+        logger.debug("create called ... returning " + SINGLETON);
         return SINGLETON;
     }
 
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
-        logger.info("getRequirementChoices called ... returning " + REQUIREMENT_CHOICES);
+        logger.debug("getRequirementChoices called ... returning " + REQUIREMENT_CHOICES);
         return REQUIREMENT_CHOICES;
     }
 
     public boolean isUserSetupAllowed() {
-        logger.info("isUserSetupAllowed called ... returning false");
+        logger.debug("isUserSetupAllowed called ... returning false");
         return false;
     }
 
     public boolean isConfigurable() {
         boolean result = true;
-        logger.info("isConfigurable called ... returning " + result);
+        logger.debug("isConfigurable called ... returning " + result);
         return result;
     }
 
     public String getHelpText() {
-        logger.info("getHelpText called ...");
+        logger.debug("getHelpText called ...");
         return "Validates if a required HTTP HEADER has the correct value.";
     }
 
     public String getDisplayType() {
         String result = "HTTP Header Authentication";
-        logger.info("getDisplayType called ... returning " + result);
+        logger.debug("getDisplayType called ... returning " + result);
         return result;
     }
 
     public String getReferenceCategory() {
-        logger.info("getReferenceCategory called ... returning http-header");
+        logger.debug("getReferenceCategory called ... returning http-header");
         return "http-header";
     }
 
     public List<ProviderConfigProperty> getConfigProperties() {
-        logger.info("getConfigProperties called ... returning " + configProperties);
+        logger.debug("getConfigProperties called ... returning " + configProperties);
         return configProperties;
     }
 
     public void init(Config.Scope config) {
-        logger.info("init called ... config.scope = " + config);
+        logger.debug("init called ... config.scope = " + config);
     }
 
     public void postInit(KeycloakSessionFactory factory) {
-        logger.info("postInit called ... factory = " + factory);
+        logger.debug("postInit called ... factory = " + factory);
     }
 
     public void close() {
-        logger.info("close called ...");
+        logger.debug("close called ...");
     }
 }
