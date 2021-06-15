@@ -2,11 +2,17 @@
 
 To install the HTTP Header Authenticator one has to:
 
-* Add the jar to the Keycloak server:
-`cp target/keycloak-header-authenticator.jar _KEYCLOAK_HOME_/providers/`
+* Git Clone
+`git clone https://github.com/gcorgne/keycloak-header-authenticator.git`
 
-* Add the template to the Keycloak server:
-`cp templates/hdr-validation.ftl _KEYCLOAK_HOME_/themes/base/login/`
+* Maven package
+`cd keycloak-header-authenticator;mvn package`
+
+* Add the jar to the keycloak docker image volumes :
+`- /apps/keycloak/themes/hdr-validation.ftl:/opt/jboss/keycloak/themes/base/login/hdr-validation.ftl`
+
+* Add the template to the Keycloak docker image volumes :
+`- /apps/keycloak/providers:/opt/jboss/keycloak/providers`
 
 Configure your REALM to use the HTTP Header Authentication.
 First create a new REALM (or select a previously created REALM).
