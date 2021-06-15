@@ -40,12 +40,6 @@ public class KeycloakHeaderAuthenticatorFactory implements AuthenticatorFactory,
         property.setHelpText("This HTTP HEADER must be present with a specified value, otherwise the flow will terminate.");
         configProperties.add(property);
 
-        property = new ProviderConfigProperty();
-        property.setName(HDRAuthenticatorContstants.CONF_PRP_HEADER_REQ_VALUE);
-        property.setLabel("Required value of the HTTP header");
-        property.setType(ProviderConfigProperty.STRING_TYPE);
-        property.setHelpText("Only when the value of the specified HTTP HEADER matches the value, the flow will continue.");
-        configProperties.add(property);
     }
 
     public String getId() {

@@ -4,31 +4,34 @@ import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
-import org.keycloak.models.AuthenticationExecutionModel;
+// import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.utils.KeycloakModelUtils;
 
 import javax.ws.rs.core.Response;
 
 /**
  * Created by joris on 25/11/2016.
+ * Updated by gmc44 on 15/06/2021 : get username from http header
  */
+
 public class KeycloakHeaderAuthenticator implements Authenticator {
 
     private static Logger logger = Logger.getLogger(KeycloakHeaderAuthenticator.class);
 
     public static final String CREDENTIAL_TYPE = "http-header_validation";
 
+    @Override
     public void authenticate(AuthenticationFlowContext context) {
         logger.debug("authenticate called ... context = " + context);
 
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
         String headerName = config.getConfig().get(HDRAuthenticatorContstants.CONF_PRP_HEADER_NAME);
-        String requiredValue = config.getConfig().get(HDRAuthenticatorContstants.CONF_PRP_HEADER_REQ_VALUE);
 
-        if(headerName == null || requiredValue == null) {
+        if(headerName == null) {
             Response challenge =  context.form()
                     .setError("HTTP Header validator is not configured")
                     .createForm("hdr-validation.ftl");
@@ -38,32 +41,23 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
             return;
         }
 
-        String headerValue = null;
+        String username = null;
 
         try {
-            headerValue = context.getHttpRequest().getHttpHeaders().getHeaderString(headerName);
+            username = context.getHttpRequest().getHttpHeaders().getHeaderString(headerName);
         } catch (NullPointerException npe) {
             // ignore
         }
+        logger.debug("User from Header = " + username);
 
-        logger.debug("Header " + headerName + " has value " + headerValue + " ( expected " +  requiredValue + ")");
 
-        if(headerValue != null && headerValue.equals(requiredValue)) {
-            // Ok, let the user in
-            logger.debug("Calling context.success()");
-            context.success();
-        } else {
-            if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.OPTIONAL ||
-                    context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.ALTERNATIVE) {
-                logger.debug("Calling context.attempted()");
-                context.attempted();
-            } else if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.REQUIRED) {
-                logger.debug("Calling context.failure()");
-                context.failure(AuthenticationFlowError.INVALID_CREDENTIALS);
-            } else {
-                // Something strange happened
-            }
+        UserModel user = KeycloakModelUtils.findUserByNameOrEmail(context.getSession(), context.getRealm(), username);
+        if (user == null) {
+            context.failure(AuthenticationFlowError.UNKNOWN_USER);
+            return;
         }
+        context.setUser(user);
+        context.success();
     }
 
     public void action(AuthenticationFlowContext context) {
@@ -72,12 +66,13 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
 
     public boolean requiresUser() {
         // We don't need a User to check if an HTTP header is passed or not
+        // return false;
         return false;
     }
 
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         // This method should not be called (because requiresUser returns false).
-        return false;
+        return true;
     }
 
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {

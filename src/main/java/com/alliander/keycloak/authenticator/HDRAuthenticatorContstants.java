@@ -5,5 +5,4 @@ package com.alliander.keycloak.authenticator;
  */
 public class HDRAuthenticatorContstants {
     public static final String CONF_PRP_HEADER_NAME = "hdr-auth.header.name";
-    public static final String CONF_PRP_HEADER_REQ_VALUE = "hdr-auth.header.value";
 }
