@@ -3,7 +3,7 @@
 To install the HTTP Header Authenticator one has to:
 
 * Git Clone
-`git clone https://github.com/gcorgne/keycloak-header-authenticator.git`
+`git clone https://github.com/gmc44/keycloak-header-authenticator.git`
 
 * Maven package
 `cd keycloak-header-authenticator;mvn package`
