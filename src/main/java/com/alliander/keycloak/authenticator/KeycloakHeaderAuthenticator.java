@@ -28,36 +28,41 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
     public void authenticate(AuthenticationFlowContext context) {
         logger.debug("authenticate called ... context = " + context);
 
+        //Get HeaderName
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
         String headerName = config.getConfig().get(HDRAuthenticatorContstants.CONF_PRP_HEADER_NAME);
-
         if(headerName == null) {
-            Response challenge =  context.form()
-                    .setError("HTTP Header validator is not configured")
-                    .createForm("hdr-validation.ftl");
-            logger.debug("Calling context.failureChallenge( ... )");
-
-            context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
+            accessDenied(context, "Failed to get header config, empty ?");
             return;
         }
+        logger.debug("HeaderName = " + headerName);
 
+        //Get User from Header
         String username = null;
-
         try {
             username = context.getHttpRequest().getHttpHeaders().getHeaderString(headerName);
         } catch (NullPointerException npe) {
-            // ignore
-        }
-        logger.debug("User from Header = " + username);
-
-
-        UserModel user = KeycloakModelUtils.findUserByNameOrEmail(context.getSession(), context.getRealm(), username);
-        if (user == null) {
-            context.failure(AuthenticationFlowError.UNKNOWN_USER);
+            accessDenied(context, "Failed to read header");
             return;
         }
-        context.setUser(user);
-        context.success();
+        logger.warn("User found from Header = " + username);
+
+        //Set User in Keycloak Context
+        UserModel user = KeycloakModelUtils.findUserByNameOrEmail(context.getSession(), context.getRealm(), username);
+        if(user == null) {
+            accessDenied(context, "Failed to get ldap user from header (" + username + ")");
+            return;
+        } else {
+            logger.debug("User found from Header = " + username);
+            context.setUser(user);
+            context.success();
+        }
+    }
+
+    private void accessDenied(AuthenticationFlowContext context, String reason) {
+        logger.warn("Access denied : " + reason);
+        context.failure(AuthenticationFlowError.UNKNOWN_USER);
+        context.clearUser();
     }
 
     public void action(AuthenticationFlowContext context) {
