@@ -11,8 +11,6 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
-import javax.ws.rs.core.Response;
-
 /**
  * Created by joris on 25/11/2016.
  * Updated by gmc44 on 15/06/2021 : get username from http header
