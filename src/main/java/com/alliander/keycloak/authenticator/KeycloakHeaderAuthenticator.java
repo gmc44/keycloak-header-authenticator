@@ -43,15 +43,16 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
             accessDenied(context, "Failed to read header");
             return;
         }
-        logger.warn("User found from Header = " + username);
+        logger.debug("User found from Header = " + username);
 
         //Set User in Keycloak Context
         UserModel user = KeycloakModelUtils.findUserByNameOrEmail(context.getSession(), context.getRealm(), username);
         if(user == null) {
             accessDenied(context, "Failed to get ldap user from header (" + username + ")");
+            logger.warn("Failed to get ldap user from header = " + username);
             return;
         } else {
-            logger.debug("User found from Header = " + username);
+            logger.debug("Keycloak User found from Header = " + username);
             context.setUser(user);
             context.success();
         }
