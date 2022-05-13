@@ -4,7 +4,7 @@ import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
-// import org.keycloak.models.AuthenticationExecutionModel;
+import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -14,6 +14,7 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 /**
  * Created by joris on 25/11/2016.
  * Updated by gmc44 on 15/06/2021 : get username from http header
+ * Updated by gmc44 on 13/05/2022 : check context user VS header user
  */
 
 public class KeycloakHeaderAuthenticator implements Authenticator {
@@ -36,25 +37,54 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
         logger.debug("HeaderName = " + headerName);
 
         //Get User from Header
-        String username = null;
+        String headerusername = null;
         try {
-            username = context.getHttpRequest().getHttpHeaders().getHeaderString(headerName);
+            headerusername = context.getHttpRequest().getHttpHeaders().getHeaderString(headerName);
         } catch (NullPointerException npe) {
             accessDenied(context, "Failed to read header");
             return;
         }
-        logger.debug("User found from Header = " + username);
+        logger.debug("User found from Header = " + headerusername);
 
-        //Set User in Keycloak Context
-        UserModel user = KeycloakModelUtils.findUserByNameOrEmail(context.getSession(), context.getRealm(), username);
-        if(user == null) {
-            accessDenied(context, "Failed to get ldap user from header (" + username + ")");
-            logger.warn("Failed to get ldap user from header = " + username);
+        //Set User as Keycloak Context
+        UserModel headerusermodel = KeycloakModelUtils.findUserByNameOrEmail(context.getSession(), context.getRealm(), headerusername);
+        if(headerusermodel == null) {
+            accessDenied(context, "Failed to get ldap user from header (" + headerusername + ")");
+            logger.warn("Failed to get ldap user from header = " + headerusername);
             return;
         } else {
-            logger.debug("Keycloak User found from Header = " + username);
-            context.setUser(user);
+            logger.debug("Keycloak User found from Header = " + headerusername);
+        }
+
+        //Check if there is already a user in context :
+        String currentusername = "nocurrentuser";
+        try {
+            UserModel currentusermodel=context.getUser();
+            currentusername = currentusermodel.getUsername();
+        } catch (NullPointerException npe) {
+            logger.debug("No Current Keycloak User found");
+        }
+        
+        // Check if current user is the same as header user
+        if (currentusername.equals("nocurrentuser")) {
+            context.setUser(headerusermodel);
             context.success();
+        } else if (currentusername.equals(headerusername)) {
+            // Same user : no setUser needed
+            context.success();
+        } else {
+            // Conflict Context User != Header User
+            String msg = "User Cookie ("+ currentusername +") is different from User Header (" + headerusername + "), clearing "+ currentusername +" session... ";
+            KeycloakSession keycloakSession = context.getSession();
+            AuthenticationManager.AuthResult authResult = AuthenticationManager.authenticateIdentityCookie(keycloakSession,context.getRealm(), true);
+            if (authResult != null) {
+                // Removing current user session
+                AuthenticationManager.backchannelLogout(keycloakSession, authResult.getSession(), true);
+                logger.debug(msg);
+            } else {
+                logger.warn(msg+"Failed to logout User");
+            }
+            accessDenied(context, msg);
         }
     }
 
@@ -65,7 +95,7 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
     }
 
     public void action(AuthenticationFlowContext context) {
-        // Nothing here
+        //nothing here   
     }
 
     public boolean requiresUser() {
