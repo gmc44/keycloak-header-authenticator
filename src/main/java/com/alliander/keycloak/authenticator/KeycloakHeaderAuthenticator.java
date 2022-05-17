@@ -1,15 +1,18 @@
 package com.alliander.keycloak.authenticator;
 
+import javax.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
-import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
+import org.keycloak.services.managers.AuthenticationManager;
+import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
  * Created by joris on 25/11/2016.
@@ -24,74 +27,82 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
     public static final String CREDENTIAL_TYPE = "http-header_validation";
 
     @Override
-    public void authenticate(AuthenticationFlowContext context) {
-        logger.debug("authenticate called ... context = " + context);
+    public void authenticate(final AuthenticationFlowContext context) {
 
         //Get HeaderName
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
         String headerName = config.getConfig().get(HDRAuthenticatorContstants.CONF_PRP_HEADER_NAME);
         if(headerName == null) {
-            accessDenied(context, "Failed to get header config, empty ?");
-            return;
-        }
-        logger.debug("HeaderName = " + headerName);
-
-        //Get User from Header
-        String headerusername = null;
-        try {
-            headerusername = context.getHttpRequest().getHttpHeaders().getHeaderString(headerName);
-        } catch (NullPointerException npe) {
-            accessDenied(context, "Failed to read header");
-            return;
-        }
-        logger.debug("User found from Header = " + headerusername);
-
-        //Set User as Keycloak Context
-        UserModel headerusermodel = KeycloakModelUtils.findUserByNameOrEmail(context.getSession(), context.getRealm(), headerusername);
-        if(headerusermodel == null) {
-            accessDenied(context, "Failed to get ldap user from header (" + headerusername + ")");
-            logger.warn("Failed to get ldap user from header = " + headerusername);
-            return;
+            accessDenied(context, AuthenticationFlowError.UNKNOWN_USER, "Failed to get header config, empty ?");
         } else {
-            logger.debug("Keycloak User found from Header = " + headerusername);
-        }
+            logger.debug("HeaderName = " + headerName);
 
-        //Check if there is already a user in context :
-        String currentusername = "nocurrentuser";
-        try {
-            UserModel currentusermodel=context.getUser();
-            currentusername = currentusermodel.getUsername();
-        } catch (NullPointerException npe) {
-            logger.debug("No Current Keycloak User found");
-        }
-        
-        // Check if current user is the same as header user
-        if (currentusername.equals("nocurrentuser")) {
-            context.setUser(headerusermodel);
-            context.success();
-        } else if (currentusername.equals(headerusername)) {
-            // Same user : no setUser needed
-            context.success();
-        } else {
-            // Conflict Context User != Header User
-            String msg = "User Cookie ("+ currentusername +") is different from User Header (" + headerusername + "), clearing "+ currentusername +" session... ";
-            KeycloakSession keycloakSession = context.getSession();
-            AuthenticationManager.AuthResult authResult = AuthenticationManager.authenticateIdentityCookie(keycloakSession,context.getRealm(), true);
-            if (authResult != null) {
-                // Removing current user session
-                AuthenticationManager.backchannelLogout(keycloakSession, authResult.getSession(), true);
-                logger.debug(msg);
-            } else {
-                logger.warn(msg+"Failed to logout User");
+            //Get User from Header
+            String headerusername;
+            try{
+               headerusername = context.getHttpRequest().getHttpHeaders().getHeaderString(headerName);
+            } catch (NullPointerException npe) {
+               headerusername = null;
             }
-            accessDenied(context, msg);
-        }
+            
+            if(headerusername == null) {
+                accessDenied(context, AuthenticationFlowError.UNKNOWN_USER, "Failed to read header");
+            } else {
+                logger.debug("User found from Header = " + headerusername);
+
+                //Set HeaderUserModel from HeaderUserName
+                UserModel headerusermodel = KeycloakModelUtils.findUserByNameOrEmail(context.getSession(), context.getRealm(), headerusername);
+                if(headerusermodel == null) {
+                    logger.warn("Failed to get ldap user from header = " + headerusername);
+                    accessDenied(context, AuthenticationFlowError.UNKNOWN_USER, "Failed to get ldap user from header (" + headerusername + ")");
+                } else {
+                    logger.debug("Keycloak User found from Header = " + headerusername);
+
+                    //Check if there is already a user in context : Try to get Current User in KEYCLOAK_IDENTITY Cookie
+                    String currentusername = "nocurrentuser";
+                    UserModel currentusermodel = context.getUser();
+                    try {
+                        currentusername = currentusermodel.getUsername();
+                    } catch (NullPointerException npe) {
+                        logger.debug("No Current Keycloak User found");
+                    }
+                    
+                    logger.debug("Current Keycloak User = "+currentusername);
+                    
+                    // Check if current user is the same as header user
+                    if (currentusername.equals("nocurrentuser") || currentusername.equals(headerusername)) {
+                        context.setUser(headerusermodel);
+                        context.success();
+                    } else {
+                        // Conflict Context User != Header User
+                        String msg = "User Cookie ("+ currentusername +") is different from User Header (" + headerusername + "), clearing "+ currentusername +" session... ";
+                        KeycloakSession keycloakSession = context.getSession();
+                        AuthenticationManager.AuthResult authResult = AuthenticationManager.authenticateIdentityCookie(keycloakSession,context.getRealm(), true);
+                        if (authResult != null) {
+                            // Removing current user session
+                            AuthenticationManager.backchannelLogout(keycloakSession, authResult.getSession(), true);
+                            logger.debug(msg);
+                        } else {
+                            logger.warn(msg+"Failed to logout User");
+                        }
+                        accessDenied(context, AuthenticationFlowError.USER_CONFLICT, msg);
+                        // context.resetFlow();
+                    }
+                }
+            }
+        }        
     }
 
-    private void accessDenied(AuthenticationFlowContext context, String reason) {
+    private void accessDenied(final AuthenticationFlowContext context, AuthenticationFlowError autherror, String reason) {
         logger.warn("Access denied : " + reason);
-        context.failure(AuthenticationFlowError.UNKNOWN_USER);
-        context.clearUser();
+        context.failure(autherror, errorResponse(context, autherror));
+    }
+
+    private Response errorResponse(AuthenticationFlowContext context, AuthenticationFlowError errormsg) {
+        AuthenticationSessionModel authSession = context.getAuthenticationSession();
+        return context.form()
+            .setError(errormsg.toString(), authSession.getClient().getClientId())
+            .createErrorPage(Response.Status.FORBIDDEN);
     }
 
     public void action(AuthenticationFlowContext context) {
