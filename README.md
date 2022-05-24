@@ -17,7 +17,9 @@ First create a new REALM (or select a previously created REALM).
 Under Authentication > Flows:
 * Copy 'Browse' flow to 'Browser with Header check' flow
 * Click on 'Actions > Add execution on the 'Browser with Header check' line and add the 'HTTP Header Authentication'
-* On execution, click 'Actions > Config' and set e.g. HTTP header = Ct-Remote-User
+* On execution, click 'Actions > Config'
+    * set e.g. HTTP header = Ct-Remote-User
+    * optional : you can copy some Headers into UserSessionNotes, it can be used in client scope mapper with 'User Session Note' Type
 * Set 'HTTP Header Authentication' to 'REQUIRED' or 'ALTERNATIVE'
 
 Under Authentication > Bindings:

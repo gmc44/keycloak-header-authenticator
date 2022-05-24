@@ -1,6 +1,16 @@
 package com.alliander.keycloak.authenticator;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map.Entry;
+
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
@@ -32,6 +42,7 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
         //Get HeaderName
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
         String headerName = config.getConfig().get(HDRAuthenticatorContstants.CONF_PRP_HEADER_NAME);
+        String headersToNotes = config.getConfig().get(HDRAuthenticatorContstants.CONF_PRP_HEADER_COPYHEADERSTONOTES);
         if(headerName == null) {
             accessDenied(context, AuthenticationFlowError.UNKNOWN_USER, "Failed to get header config, empty ?");
         } else {
@@ -71,7 +82,21 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
                     
                     // Check if current user is the same as header user
                     if (currentusername.equals("nocurrentuser") || currentusername.equals(headerusername)) {
+
+                        // Set User
                         context.setUser(headerusermodel);
+
+                        // Copy Headers to UserSessionNotes
+                        if (headersToNotes != null) {
+                            for (String headerToNoteName : new ArrayList<String>(Arrays.asList(headersToNotes.split("##")))) {
+                                String headerToNoteValue = context.getHttpRequest().getHttpHeaders().getHeaderString(headerToNoteName);
+                                context.getAuthenticationSession().setUserSessionNote(headerToNoteName,headerToNoteValue);
+                                logger.debug("Header " + headerToNoteName + " = " + headerToNoteValue);
+                            }
+                        }
+                        
+                        
+                        // Set Success
                         context.success();
                     } else {
                         // Conflict Context User != Header User

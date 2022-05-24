@@ -38,7 +38,12 @@ public class KeycloakHeaderAuthenticatorFactory implements AuthenticatorFactory 
         property.setType(ProviderConfigProperty.STRING_TYPE);
         property.setHelpText("This HTTP HEADER must be present with a specified value, otherwise the flow will terminate.");
         configProperties.add(property);
-
+        property = new ProviderConfigProperty();
+        property.setName(HDRAuthenticatorContstants.CONF_PRP_HEADER_COPYHEADERSTONOTES);
+        property.setLabel("Headers to copy to UserSessionNotes");
+        property.setType(ProviderConfigProperty.MULTIVALUED_STRING_TYPE);
+        property.setHelpText("List of headers that will be copied to UserSessionNotes and can be used in client scope mapper");
+        configProperties.add(property);
     }
 
     public String getId() {
