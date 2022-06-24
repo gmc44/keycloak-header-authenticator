@@ -20,6 +20,7 @@ import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.events.Details;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.sessions.AuthenticationSessionModel;
@@ -95,6 +96,9 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
                             }
                         }
                         
+                        // Remember Me by default
+                        context.getAuthenticationSession().setAuthNote(Details.REMEMBER_ME, "true");
+	                    context.getEvent().detail(Details.REMEMBER_ME, "true");
                         
                         // Set Success
                         context.success();
