@@ -77,10 +77,15 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
                     logger.debug(Module+"Current Keycloak User = "+currentusername);
                     
                     // Check if current user is the same as header user
-                    if (currentusername.equals("nocurrentuser") || currentusername.equals(headerusername)) {
+                    if (currentusername.equals("nocurrentuser") || currentusername.equalsIgnoreCase(headerusername)) {
 
                         // Set User
-                        context.setUser(headerusermodel);
+                        if (currentusername.equals("nocurrentuser")) {
+                            context.setUser(headerusermodel);
+                        } else {
+                            context.setUser(currentusermodel);
+                        }
+                        
 
                         // Copy Headers to UserSessionNotes
                         if (headersToNotes != null) {
