@@ -79,13 +79,14 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
                     // Check if current user is the same as header user
                     if (currentusername.equals("nocurrentuser") || currentusername.equalsIgnoreCase(headerusername)) {
 
+                        
                         // Set User
                         if (currentusername.equals("nocurrentuser")) {
                             context.setUser(headerusermodel);
                         } else {
                             context.setUser(currentusermodel);
                         }
-                        
+
 
                         // Copy Headers to UserSessionNotes
                         if (headersToNotes != null) {
@@ -96,10 +97,6 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
                             }
                         }
                         
-                        // Remember Me by default
-                        // context.getAuthenticationSession().setAuthNote(Details.REMEMBER_ME, "true");
-	                    // context.getEvent().detail(Details.REMEMBER_ME, "true");
-                        
                         // Set Success
                         context.success();
                     } else {
@@ -109,13 +106,12 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
                         AuthenticationManager.AuthResult authResult = AuthenticationManager.authenticateIdentityCookie(keycloakSession,context.getRealm(), true);
                         if (authResult != null) {
                             // Removing current user session
-                            AuthenticationManager.backchannelLogout(keycloakSession, authResult.getSession(), true);
+                            AuthenticationManager.backchannelLogout(keycloakSession, authResult.getSession(), true);                            
                             logger.debug(Module+msg);
                         } else {
                             logger.warn(Module+msg+"Failed to logout User");
                         }
                         accessDenied(context, AuthenticationFlowError.USER_CONFLICT, msg);
-                        // context.resetFlow();
                     }
                 }
             }
@@ -131,7 +127,7 @@ public class KeycloakHeaderAuthenticator implements Authenticator {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
         return context.form()
             .setError(errormsg.toString(), authSession.getClient().getClientId())
-            .createErrorPage(Response.Status.FORBIDDEN);
+            .createForm("error.ftl");
     }
 
     public void action(AuthenticationFlowContext context) {
