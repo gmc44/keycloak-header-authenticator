@@ -1,7 +1,6 @@
 <#import "template.ftl" as layout>
 <@layout.registrationLayout; section>
 <#if section = "form">
-  <br><h2>Une erreur s'est produite lors la connexion au fournisseur d'identité, veuillez fermer votre navigateur et réessayer.</h2>
   <script>
     window.onload = function() {
       /* onload redirect on "reset-login" href */
